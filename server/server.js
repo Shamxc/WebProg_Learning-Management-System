@@ -20,9 +20,41 @@ mongoose
         console.log("MongoDB connection error: ",error);
     }); 
 
+
 app.get("/", (req, res) => {
     res.send("Server is running!");
 });
+
+//pangread
+app.get("/students", async (req, res) => {
+    const students = await Student.find();
+    res.json(students);
+});
+
+
+//pangcreate
+app.post("/register", async (req, res) => {
+
+    const existing = await Student.findOne({ email: req.body.email });
+    if (existing) {
+        return res.status(400).json("Email already registered");
+    }
+
+    const student = new Student({
+        firstName: req.body.firstName,
+        lastName: req.body.lastName,
+        email: req.body.email,
+        password: req.body.password,
+    });
+
+    await student.save();
+    res.json("Registered successfully");
+});
+
+// pangupdate
+
+
+//pangdelete
 
 app.get("/students", (req, res) => {
     res.json(students);

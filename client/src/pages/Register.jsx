@@ -1,8 +1,50 @@
-import { Button, TextField } from '@mui/material';
+import { Alert, Button, TextField } from '@mui/material';
+import { useState } from 'react';
+import axios from 'axios';
 
 function Register() {
 
     const btn = { backgroundColor: '#2F6BFF', padding: '12px', borderRadius: '12px', textTransform: 'none', fontWeight: 600, fontSize: 16, '&:hover': { backgroundColor: '#2559D6' } }
+
+    const [firstName, setFirstName] = useState('');
+    const [lastName, setLastName] = useState('');
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
+    const [message, setMessage] = useState("");
+    const [isError, setIsError] = useState(false);
+
+    function registerStudent(){
+
+    if (password !== confirmPassword) {
+        setIsError(true);
+        setMessage("Passwords do not match");
+        return;
+    }
+
+    axios
+        .post("http://localhost:5000/register", {
+            firstName: firstName,
+            lastName: lastName,
+            email: email,
+            password: password
+        })
+
+        .then((response) => {
+            setIsError(false);
+            setMessage(response.data);
+            setFirstName("");
+            setLastName("");
+            setEmail("");
+            setPassword("");
+            setConfirmPassword("");
+        })
+
+        .catch((error) => {
+            setIsError(true);
+            setMessage(error.response ? error.response.data : "Something went wrong");
+        });
+    }
 
     return (
         <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', backgroundColor: '#E4F0FF', color: '#1B1535', fontFamily: 'Figtree, sans-serif' }}>
@@ -24,21 +66,23 @@ function Register() {
                 <div style={{ position: 'relative', marginTop: -30, padding: 30, backgroundColor: '#E4F0FF', borderRadius: '30px 0 0 0' }}>
 
                     <div style={{ display: 'flex', gap: 12 }}>
-                        <TextField label="First Name" variant="outlined" fullWidth sx={{ backgroundColor: '#fff' }} />
-                        <TextField label="Last Name" variant="outlined" fullWidth sx={{ backgroundColor: '#fff' }} />
+                        <TextField label="First name" value={firstName} onChange={(e) => setFirstName(e.target.value)} variant="outlined" fullWidth sx={{ backgroundColor: '#fff' }} />
+                        <TextField label="Last name" value={lastName} onChange={(e) => setLastName(e.target.value)}variant="outlined" fullWidth sx={{ backgroundColor: '#fff' }} />
                     </div>
                     <br/>
 
-                    <TextField label="Email" variant="outlined" fullWidth sx={{ backgroundColor: '#fff' }} />
+                    <TextField label="Email" value={email} onChange={(e) => setEmail(e.target.value)} variant="outlined" fullWidth sx={{ backgroundColor: '#fff' }} />
                     <br/> <br/>
 
-                    <TextField label="Password" type="password" variant="outlined" fullWidth sx={{ backgroundColor: '#fff' }} />
+                    <TextField label="Password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} variant="outlined" fullWidth sx={{ backgroundColor: '#fff' }} />
                     <br/> <br/>
 
-                    <TextField label="Re-Enter Password" type="password" variant="outlined" fullWidth sx={{ backgroundColor: '#fff' }} />
+                    <TextField label="Confirm Password" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} variant="outlined" fullWidth sx={{ backgroundColor: '#fff' }} />
                     <br/> <br/>
 
-                    <Button variant="contained" fullWidth sx={btn}>Register</Button>
+                    {message && <Alert severity={isError ? "error" : "success"} sx={{ marginBottom: 2 }}>{message}</Alert>}
+
+                    <Button onClick={registerStudent} variant="contained" fullWidth sx={btn}>Register</Button>
 
                     <p style={{ textAlign: 'center', marginTop: 24 }}>
                         Already have an account? <a style={{ color: '#5B27C9', cursor: 'pointer', fontWeight: 600 }}>Log in</a>
