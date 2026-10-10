@@ -23,27 +23,38 @@ function Register() {
     }
 
     axios
-        .post("http://localhost:5000/register", {
-            firstName: firstName,
-            lastName: lastName,
-            email: email,
-            password: password
-        })
-
+        .get("http://localhost:5000/students")
         .then((response) => {
-            setIsError(false);
-            setMessage(response.data);
-            setFirstName("");
-            setLastName("");
-            setEmail("");
-            setPassword("");
-            setConfirmPassword("");
-        })
+            const existing = response.data.find((student) => student.email === email);
+            if (existing) {
+                setIsError(true);
+                setMessage("Email already registered");
+                return;
+            }
 
-        .catch((error) => {
-            setIsError(true);
-            setMessage(error.response ? error.response.data : "Something went wrong");
-        });
+            axios
+                .post("http://localhost:5000/register", {
+                    firstName: firstName,
+                    lastName: lastName,
+                    email: email,
+                    password: password
+                })
+
+                .then((response) => {
+                    setIsError(false);
+                    setMessage(response.data);
+                    setFirstName("");
+                    setLastName("");
+                    setEmail("");
+                    setPassword("");
+                    setConfirmPassword("");
+                })
+
+                .catch((error) => {
+                    setIsError(true);
+                    setMessage(error.response ? error.response.data : "Something went wrong");
+                });
+            });
     }
 
     return (
