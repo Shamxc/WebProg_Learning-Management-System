@@ -1,42 +1,48 @@
-import { Button, Typography, TextField } from '@mui/material';
+import { Button, TextField } from '@mui/material';
 
 function Register() {
 
+    const btn = { backgroundColor: '#2F6BFF', padding: '12px', borderRadius: '12px', textTransform: 'none', fontWeight: 600, fontSize: 16, '&:hover': { backgroundColor: '#2559D6' } }
+
     return (
-        <div style={{display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', backgroundColor: 'rgba(88, 161, 235, 0.66)', position: 'relative', overflow: 'hidden' }}>
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', backgroundColor: '#E4F0FF', color: '#1B1535', fontFamily: 'Figtree, sans-serif' }}>
 
-            <div style={{ position: 'absolute', zIndex: 0, pointerEvents: 'none', top: -120, right: -120, width: 560, height: 560, borderRadius: '50%', backgroundColor: 'rgba(220, 235, 250, 0.25)' }}></div>
-            <div style={{ position: 'absolute', zIndex: 0, pointerEvents: 'none', bottom: -140, left: -90, width: 480, height: 480, borderRadius: '50%', backgroundColor: 'rgba(91, 45, 144, 0.35)' }}></div>
-            <div style={{ position: 'absolute', zIndex: 0, pointerEvents: 'none', top: '50%', left: '40%', transform: 'translate(-50%, -50%)', width: 720, height: 720, borderRadius: '50%', backgroundColor: 'rgba(250, 249, 246, 0.12)' }}></div>
+            <div style={{ width: 500, overflow: 'hidden', borderRadius: 24, border: '1px solid #DFD7F0', boxShadow: '0 8px 24px rgba(91, 39, 201, 0.2)' }}>
 
-            <div style={{ position: 'relative', zIndex: 1, width: 400, padding: 30, textAlign: 'center', backgroundColor: '#FAF9F6', border: '1px solid #ccc', borderRadius: 10, boxShadow: '0 2px 8px rgba(0,0,0,0.15)' }}>
+                <div style={{ position: 'relative', overflow: 'hidden', padding: '30px 30px 60px', backgroundColor: '#5B27C9', color: '#fff' }}>
 
-                <h1>Register Account</h1>
+                    <div style={{ position: 'absolute', zIndex: 0, pointerEvents: 'none', top: -90, right: -90, width: 240, height: 240, borderRadius: '50%', backgroundColor: '#2F6BFF' }}></div>
 
-                <div>
+                    <div style={{ position: 'relative', zIndex: 1 }}>
+                        <h2 style={{ margin: 0, textAlign: 'right' }}>LUMEN</h2>
+                        <h1 style={{ margin: '30px 0 6px' }}>Create your account</h1>
+                        <p style={{ margin: 0 }}>Join a course and start your first lesson today.</p>
+                    </div>
+
+                </div>
+
+                <div style={{ position: 'relative', marginTop: -30, padding: 30, backgroundColor: '#E4F0FF', borderRadius: '30px 0 0 0' }}>
 
                     <div style={{ display: 'flex', gap: 12 }}>
-                        <TextField label="First Name" variant="outlined" fullWidth />
-                        <TextField label="Last Name" variant="outlined" fullWidth />
+                        <TextField label="First Name" variant="outlined" fullWidth sx={{ backgroundColor: '#fff' }} />
+                        <TextField label="Last Name" variant="outlined" fullWidth sx={{ backgroundColor: '#fff' }} />
                     </div>
-                    <br/> 
+                    <br/>
 
-                    <TextField  label="Email" variant="outlined" fullWidth />
+                    <TextField label="Email" variant="outlined" fullWidth sx={{ backgroundColor: '#fff' }} />
                     <br/> <br/>
 
-                    <TextField  label="Password" variant="outlined" fullWidth />
+                    <TextField label="Password" type="password" variant="outlined" fullWidth sx={{ backgroundColor: '#fff' }} />
                     <br/> <br/>
 
-                    <TextField  label="Re-Enter Password" variant="outlined" fullWidth />
+                    <TextField label="Re-Enter Password" type="password" variant="outlined" fullWidth sx={{ backgroundColor: '#fff' }} />
                     <br/> <br/>
 
-                    <Button variant="contained" fullWidth sx={{ backgroundColor: '#1E6BFF', padding: '12px', '&:hover': { backgroundColor: '#1553CC' } }}>Register</Button>
-                    <br/> <br/>
+                    <Button variant="contained" fullWidth sx={btn}>Register</Button>
 
-                    <a style={{color: 'rgba(30, 107, 255, 0.6)', cursor: 'pointer'}}>Aready have an account? Login</a>
-                    <br/> <br/>
-
-                    <a style={{color: 'rgba(30, 107, 255, 0.6)', cursor: 'pointer'}}>Forgot Password</a>
+                    <p style={{ textAlign: 'center', marginTop: 24 }}>
+                        Already have an account? <a style={{ color: '#5B27C9', cursor: 'pointer', fontWeight: 600 }}>Log in</a>
+                    </p>
 
                 </div>
 
