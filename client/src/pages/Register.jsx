@@ -13,6 +13,7 @@ function Register() {
     const [confirmPassword, setConfirmPassword] = useState('');
     const [message, setMessage] = useState("");
     const [isError, setIsError] = useState(false);
+    const [role, setRole] = useState('STUDENT');
 
     function registerStudent(){
 
@@ -67,7 +68,8 @@ function Register() {
                     firstName: firstName,
                     lastName: lastName,
                     email: email,
-                    password: password
+                    password: password,
+                    role:role,
                 })
 
                 .then((response) => {
@@ -78,6 +80,7 @@ function Register() {
                     setEmail("");
                     setPassword("");
                     setConfirmPassword("");
+                    setRole("STUDENT");
                 })
 
                 .catch((error) => {

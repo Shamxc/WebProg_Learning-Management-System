@@ -5,6 +5,8 @@ const studentSchema = new mongoose.Schema({
     lastName:String,
     email:String,
     password:String,
+    role:String,
+    
 });
 
 module.exports = mongoose.model("student", studentSchema);

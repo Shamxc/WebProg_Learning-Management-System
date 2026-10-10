@@ -40,20 +40,31 @@ app.post("/register", async (req, res) => {
         lastName: req.body.lastName,
         email: req.body.email,
         password: req.body.password,
+        role: req.body.role,
     });
 
     await student.save();
     res.json("Registered successfully");
 });
 
+//login to
+app.post("/login", async (req, res) => {
+
+    const student = await Student.findOne({ email: req.body.email });
+
+    if (!student || student.password !== req.body.password) {
+        return res.status(400).json("Invalid email or password");
+    }
+
+    res.json(student);
+});
+
+
 // pangupdate
 
 
 //pangdelete
 
-app.get("/students", (req, res) => {
-    res.json(students);
-});
 
 app.listen( 5000, () => {
     console.log("Server running on port 5000");

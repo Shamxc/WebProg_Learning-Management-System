@@ -1,8 +1,45 @@
-import { Button, TextField } from '@mui/material';
+import { Alert, Button, TextField } from '@mui/material';
+import { useState } from 'react';
+import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
 
 function LoginPage() {
 
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [message, setMessage] = useState("");
+    const [isError, setIsError] = useState(false);
+
+    const navigate = useNavigate();
+
     const btn = { backgroundColor: '#2F6BFF', padding: '12px', borderRadius: '12px', textTransform: 'none', fontWeight: 600, fontSize: 16, '&:hover': { backgroundColor: '#2559D6' } }
+
+    function login(){
+
+    if (email.trim() === "" || password === "") {
+        setIsError(true);
+        setMessage("Please fill in all fields");
+        return;
+    }
+
+    axios
+        .post("http://localhost:5000/login", {
+            email: email,
+            password: password
+        })
+
+        .then((response) => {
+            setIsError(false);
+            setEmail("");
+            setPassword("");
+            navigate("/dashboard");
+        })
+
+        .catch((error) => {
+            setIsError(true);
+            setMessage(error.response ? error.response.data : "Something went wrong");
+        });
+    }
 
     return (
         <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', backgroundColor: '#E4F0FF', color: '#1B1535', fontFamily: 'Figtree, sans-serif' }}>
@@ -23,16 +60,18 @@ function LoginPage() {
 
                 <div style={{ position: 'relative', marginTop: -30, padding: 30, backgroundColor: '#E4F0FF', borderRadius: '30px 0 0 0' }}>
 
-                    <TextField label="Email" variant="outlined" fullWidth sx={{ backgroundColor: '#fff' }} />
+                    <TextField label="Email" value={email} onChange={(e) => setEmail(e.target.value)} variant="outlined" fullWidth sx={{ backgroundColor: '#fff' }} />
                     <br/> <br/>
 
-                    <TextField label="Password" type="password" variant="outlined" fullWidth sx={{ backgroundColor: '#fff' }} />
+                    <TextField label="Password"  value={password} onChange={(e) => setPassword(e.target.value)} type="password" variant="outlined" fullWidth sx={{ backgroundColor: '#fff' }} />
 
                     <div style={{ textAlign: 'right', margin: '10px 0 20px' }}>
                         <a style={{ color: '#5B27C9', cursor: 'pointer', textDecoration: 'underline' }}>Forgot password?</a>
                     </div>
 
-                    <Button variant="contained" fullWidth sx={btn}>Log in</Button>
+                    {message && <Alert severity={isError ? "error" : "success"} sx={{ marginBottom: 2 }}>{message}</Alert>}
+
+                    <Button onClick={login} variant="contained" fullWidth sx={btn}>Log in</Button>
 
                     <p style={{ textAlign: 'center', marginTop: 24 }}>
                         New to LUMEN? <a style={{ color: '#5B27C9', cursor: 'pointer', fontWeight: 600 }}>Create an account</a>
