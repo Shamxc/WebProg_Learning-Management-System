@@ -16,6 +16,36 @@ function Register() {
 
     function registerStudent(){
 
+    if (firstName.trim() === "" || lastName.trim() === "" || email.trim() === "" || password === "" || confirmPassword === "") {
+        setIsError(true);
+        setMessage("Please fill in all fields");
+        return;
+    }
+
+    if (firstName.trim().length < 3 || firstName.trim().length > 20) {
+        setIsError(true);
+        setMessage("First name must be 3 to 20 characters");
+        return;
+    }
+
+    if (lastName.trim().length < 3 || lastName.trim().length > 20) {
+        setIsError(true);
+        setMessage("Last name must be 3 to 20 characters");
+        return;
+    }
+
+    if (!email.includes("@") || !email.includes(".") || email.length > 30) {
+        setIsError(true);
+        setMessage("Please enter a valid email");
+        return;
+    }
+
+    if (password.length < 8 || password.length > 16) {
+        setIsError(true);
+        setMessage("Password must be 8 to 16 characters");
+        return;
+    }
+
     if (password !== confirmPassword) {
         setIsError(true);
         setMessage("Passwords do not match");
@@ -55,7 +85,7 @@ function Register() {
                     setMessage(error.response ? error.response.data : "Something went wrong");
                 });
             });
-    }
+        }
 
     return (
         <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', backgroundColor: '#E4F0FF', color: '#1B1535', fontFamily: 'Figtree, sans-serif' }}>
@@ -95,7 +125,7 @@ function Register() {
 
                     <Button onClick={registerStudent} variant="contained" fullWidth sx={btn}>Register</Button>
 
-                    <p style={{ textAlign: 'center', marginTop: 24 }}>
+                    <p style={{ textAlign:'center', marginTop: 24 }}>
                         Already have an account? <a style={{ color: '#5B27C9', cursor: 'pointer', fontWeight: 600 }}>Log in</a>
                     </p>
 
