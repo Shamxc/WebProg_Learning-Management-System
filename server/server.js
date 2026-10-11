@@ -2,6 +2,7 @@ const express = require("express");
 const cors = require("cors");
 const mongoose = require("mongoose");
 const Student = require("./models/Student");
+const Course = require("./models/Courses");
 
 require("dotenv").config();
 
@@ -29,6 +30,11 @@ app.get("/", (req, res) => {
 app.get("/students", async (req, res) => {
     const students = await Student.find();
     res.json(students);
+});
+
+app.get("/courses", async (req, res) => {
+    const courses = await Course.find();
+    res.json(courses);
 });
 
 
