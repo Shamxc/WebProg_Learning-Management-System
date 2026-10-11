@@ -32,6 +32,7 @@ function LoginPage() {
             setIsError(false);
             setEmail("");
             setPassword("");
+            localStorage.setItem("studentId", response.data._id);
             navigate("/dashboard");
         })
 

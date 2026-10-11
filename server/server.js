@@ -61,10 +61,16 @@ app.post("/login", async (req, res) => {
 
 
 // pangupdate
-
+app.put("/students/:id", async (req, res) => {
+    await Student.findByIdAndUpdate(req.params.id, req.body);
+    res.json("Updated");
+});
 
 //pangdelete
-
+app.delete("/students/:id", async (req, res) => {
+    await Student.findByIdAndDelete(req.params.id);
+    res.json("Deleted");
+});
 
 app.listen( 5000, () => {
     console.log("Server running on port 5000");
