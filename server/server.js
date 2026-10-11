@@ -3,6 +3,8 @@ const cors = require("cors");
 const mongoose = require("mongoose");
 const Student = require("./models/Student");
 const Course = require("./models/Courses");
+const Assessment = require("./models/Assessment");
+const Event = require("./models/Event");
 
 require("dotenv").config();
 
@@ -37,6 +39,15 @@ app.get("/courses", async (req, res) => {
     res.json(courses);
 });
 
+app.get("/assessment", async (req, res) => {
+    const assessment = await Assessment.find();
+    res.json(assessment);
+});
+
+app.get("/events", async (req, res) => {
+    const events = await Event.find();
+    res.json(events);
+});
 
 //pangcreate
 app.post("/register", async (req, res) => {
