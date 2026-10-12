@@ -52,6 +52,7 @@ function Sidebar({ active }) {
 
                 <Link to="/dashboard" style={link('Dashboard')}>Dashboard</Link>
                 <Link to="/profile" style={link('Profile')}>Profile</Link>
+                <Link to="/announcements" style={link('Announcements')}>Announcements</Link>
                 {role === 'ADMIN' && <Link to="/announcements" style={link('Announcements')}>Announcements</Link>}
                 {role === 'STUDENT' && <Link to="/my-learning" style={link('My Learning')}>My Learning</Link>}
                 {role === 'ADMIN' && <Link to="/courses" style={link('Courses')}>Courses</Link>}
