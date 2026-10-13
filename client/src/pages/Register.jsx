@@ -1,9 +1,12 @@
-import { Alert, Button, TextField } from '@mui/material';
+import { Alert, Button, TextField, ToggleButton, ToggleButtonGroup } from '@mui/material';
 import { useState } from 'react';
 import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
 
 function Register() {
 
+
+    const navigate = useNavigate();
     const btn = { backgroundColor: '#2F6BFF', padding: '12px', borderRadius: '12px', textTransform: 'none', fontWeight: 600, fontSize: 16, '&:hover': { backgroundColor: '#2559D6' } }
 
     const [firstName, setFirstName] = useState('');
@@ -41,9 +44,9 @@ function Register() {
         return;
     }
 
-    if (password.length < 8 || password.length > 16) {
+    if (password.length < 8 || password.length > 30) {
         setIsError(true);
-        setMessage("Password must be 8 to 16 characters");
+        setMessage("Password must be 8 to 30 characters");
         return;
     }
 
@@ -100,7 +103,10 @@ function Register() {
                     <div style={{ position: 'absolute', zIndex: 0, pointerEvents: 'none', top: -90, right: -90, width: 240, height: 240, borderRadius: '50%', backgroundColor: '#2F6BFF' }}></div>
 
                     <div style={{ position: 'relative', zIndex: 1 }}>
-                        <h2 style={{ margin: 0, textAlign: 'right' }}>LUMEN</h2>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <Button onClick={() => navigate("/")} sx={{ color: '#fff', textTransform: 'none', fontWeight: 600, padding: 0, minWidth: 0 }}>← Back to home</Button>
+                            <h2 style={{ margin: 0 }}>LUMEN</h2>
+                        </div>
                         <h1 style={{ margin: '30px 0 6px' }}>Create your account</h1>
                         <p style={{ margin: 0 }}>Join a course and start your first lesson today.</p>
                     </div>
@@ -108,8 +114,13 @@ function Register() {
                 </div>
 
                 <div style={{ position: 'relative', marginTop: -30, padding: 30, backgroundColor: '#E4F0FF', borderRadius: '30px 0 0 0' }}>
-
+                    <ToggleButtonGroup value={role} exclusive fullWidth onChange={(e, newRole) => { if (newRole) setRole(newRole); }} sx={{ backgroundColor: '#fff' }}>
+                        <ToggleButton value="STUDENT" sx={{ textTransform: 'none', fontWeight: 600 }}>Student</ToggleButton>
+                        <ToggleButton value="TEACHER" sx={{ textTransform: 'none', fontWeight: 600 }}>Teacher</ToggleButton>
+                    </ToggleButtonGroup>
+                    <br/> <br/>
                     <div style={{ display: 'flex', gap: 12 }}>
+                        
                         <TextField label="First name" value={firstName} onChange={(e) => setFirstName(e.target.value)} variant="outlined" fullWidth sx={{ backgroundColor: '#fff' }} />
                         <TextField label="Last name" value={lastName} onChange={(e) => setLastName(e.target.value)}variant="outlined" fullWidth sx={{ backgroundColor: '#fff' }} />
                     </div>
@@ -129,7 +140,7 @@ function Register() {
                     <Button onClick={registerStudent} variant="contained" fullWidth sx={btn}>Register</Button>
 
                     <p style={{ textAlign:'center', marginTop: 24 }}>
-                        Already have an account? <a style={{ color: '#5B27C9', cursor: 'pointer', fontWeight: 600 }}>Log in</a>
+                        Already have an account? <a onClick={() => navigate("/login")} style={{ color: '#5B27C9', cursor: 'pointer', fontWeight: 600 }}>Log in</a>
                     </p>
 
                 </div>

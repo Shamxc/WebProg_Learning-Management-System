@@ -61,9 +61,9 @@ function Sidebar({ active }) {
                 <Link to="/assessments" style={link('Assessments')}>Assessments</Link>
                 {role === 'TEACHER' && <Link to="/gradebook" style={link('Gradebook')}>Gradebook</Link>}
 
-                <Link to="/login" style={link('Logout')}>Logout</Link>
+                <Link to="/login" style={{ ...link('Logout'), marginTop: 'auto', marginBottom: 0, position: 'relative', zIndex: 1 }}>Logout</Link>
 
-                <div style={{ marginTop: 'auto', marginLeft: -90, marginBottom: -110, width: 240, height: 240, borderRadius: '50%', backgroundColor: '#2F6BFF', flexShrink: 0 }}></div>
+                <div style={{ position: 'absolute', left: -90, bottom: -110, width: 240, height: 240, borderRadius: '50%', backgroundColor: '#2F6BFF' }}></div>
 
             </div>
 

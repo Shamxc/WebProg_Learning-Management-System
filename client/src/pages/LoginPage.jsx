@@ -1,4 +1,4 @@
-import { Alert, Button, TextField } from '@mui/material';
+import { Alert, Button, TextField, ToggleButton, ToggleButtonGroup } from '@mui/material';
 import { useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
@@ -9,6 +9,7 @@ function LoginPage() {
     const [password, setPassword] = useState('');
     const [message, setMessage] = useState("");
     const [isError, setIsError] = useState(false);
+    const [role, setRole] = useState('STUDENT');
 
     const navigate = useNavigate();
 
@@ -22,10 +23,17 @@ function LoginPage() {
         return;
     }
 
+    if (!email.includes("@") || !email.includes(".") || email.length > 30) {
+        setIsError(true);
+        setMessage("Please enter a valid email");
+        return;
+    }
+
     axios
         .post("http://localhost:5000/login", {
             email: email,
-            password: password
+            password: password,
+            role: role
         })
 
         .then((response) => {
@@ -52,7 +60,10 @@ function LoginPage() {
                     <div style={{ position: 'absolute', zIndex: 0, pointerEvents: 'none', top: -90, right: -90, width: 240, height: 240, borderRadius: '50%', backgroundColor: '#2F6BFF' }}></div>
 
                     <div style={{ position: 'relative', zIndex: 1 }}>
-                        <h2 style={{ margin: 0, textAlign: 'right' }}>LUMEN</h2>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <Button onClick={() => navigate("/")} sx={{ color: '#fff', textTransform: 'none', fontWeight: 600, padding: 0, minWidth: 0 }}>← Back to home</Button>
+                            <h2 style={{ margin: 0 }}>LUMEN</h2>
+                        </div>
                         <h1 style={{ margin: '30px 0 6px' }}>Welcome back</h1>
                         <p style={{ margin: 0 }}>Log in to pick up your lessons where you left off.</p>
                     </div>
@@ -60,7 +71,11 @@ function LoginPage() {
                 </div>
 
                 <div style={{ position: 'relative', marginTop: -30, padding: 30, backgroundColor: '#E4F0FF', borderRadius: '30px 0 0 0' }}>
-
+                    <ToggleButtonGroup value={role} exclusive fullWidth onChange={(e, newRole) => { if (newRole) setRole(newRole); }} sx={{ backgroundColor: '#fff' }}>
+                        <ToggleButton value="STUDENT" sx={{ textTransform: 'none', fontWeight: 600 }}>Student</ToggleButton>
+                        <ToggleButton value="TEACHER" sx={{ textTransform: 'none', fontWeight: 600 }}>Teacher</ToggleButton>
+                    </ToggleButtonGroup>
+                    <br/> <br/>
                     <TextField label="Email" value={email} onChange={(e) => setEmail(e.target.value)} variant="outlined" fullWidth sx={{ backgroundColor: '#fff' }} />
                     <br/> <br/>
 
@@ -75,7 +90,7 @@ function LoginPage() {
                     <Button onClick={login} variant="contained" fullWidth sx={btn}>Log in</Button>
 
                     <p style={{ textAlign: 'center', marginTop: 24 }}>
-                        New to LUMEN? <a style={{ color: '#5B27C9', cursor: 'pointer', fontWeight: 600 }}>Create an account</a>
+                        New to LUMEN? <a onClick={() => navigate("/register")} style={{ color: '#5B27C9', cursor: 'pointer', fontWeight: 600 }}>Create an account</a>
                     </p>
 
                 </div>
