@@ -37,18 +37,56 @@ app.get("/students", async (req, res) => {
 });
 
 app.get("/courses", async (req, res) => {
-    const courses = await Course.find();
+    let courses = await Course.find().lean();
+
+    if (req.query.student) {
+        const mine = await getEnrollments(req.query.student);
+        courses = courses
+            .filter((c) => mine.some((m) => m.names.includes(c.name)))
+            .map((c) => {
+                const m = mine.find((x) => x.names.includes(c.name));
+                return { ...c, section: m.section, score: m.score, grade: m.grade };
+            });
+    }
+
     res.json(courses);
 });
 
 app.get("/assessments", async (req, res) => {
-    const assessments = await Assessment.find();
+    let assessments = await Assessment.find().lean();
+
+    if (req.query.student) {
+        const mine = await getEnrollments(req.query.student);
+        assessments = assessments.filter((a) => mine.some((m) => m.names.includes(a.course) && m.section === a.section));
+
+        if (assessments.length > 0) {
+            const grades = await Grade.find({ student: req.query.student });
+            assessments = assessments.map((a) => {
+                const g = grades.find((x) => String(x.assessment) === String(a._id));
+                return g && g.score != null ? { ...a, status: g.score + " / " + g.total } : a;
+            });
+        }
+    }
+
     res.json(assessments);
 });
 
 app.get("/events", async (req, res) => {
-    const events = await Event.find();
-    res.json(events);
+    let assessments = await Assessment.find();
+
+    if (req.query.student) {
+        const mine = await getEnrollments(req.query.student);
+        assessments = assessments.filter((a) => mine.some((m) => m.names.includes(a.course) && m.section === a.section));
+    }
+
+    res.json(assessments.map((a) => ({
+        _id: a._id,
+        title: a.name,
+        type: a.type,
+        course: a.course,
+        section: a.section,
+        date: a.due,
+    })));
 });
 
 app.get("/my-courses", async (req, res) => {
@@ -63,6 +101,11 @@ app.get("/my-courses", async (req, res) => {
     res.json(courses);
 });
 
+app.get("/sections", async (req, res) => {
+    const sections = await MyCourse.distinct("students.section");
+    res.json(sections.filter(Boolean));
+});
+
 app.get("/announcements", async (req, res) => {
     const announcements = await Announcements.find().sort({ date: -1 });
     res.json(announcements);
@@ -70,6 +113,11 @@ app.get("/announcements", async (req, res) => {
 
 // pangcreate
 app.post("/register", async (req, res) => {
+    const existing = await Student.findOne({ email: req.body.email });
+    if (existing) {
+        return res.status(400).json("Email already registered");
+    }
+
     const student = new Student({
         firstName: req.body.firstName,
         lastName: req.body.lastName,
@@ -98,6 +146,7 @@ app.post("/assessments", async (req, res) => {
     const assessment = new Assessment({
         name: req.body.name,
         course: req.body.course,
+        section: req.body.section,
         type: req.body.type,
         due: req.body.due,
         description: req.body.description,
@@ -137,6 +186,7 @@ app.put("/assessments/:id", async (req, res) => {
     await Assessment.findByIdAndUpdate(req.params.id, {
         name: req.body.name,
         course: req.body.course,
+        section: req.body.section,
         type: req.body.type,
         due: req.body.due,
         description: req.body.description,
@@ -224,6 +274,42 @@ app.delete("/grades/:id", async (req, res) => {
     res.json("Grade deleted");
 });
 
+app.put("/my-courses/:id/students/:studentId", async (req, res) => {
+    const course = await MyCourse.findById(req.params.id);
+    if (!course) return res.status(404).json("Course not found");
+
+    const entry = course.students.find((s) => String(s.student) === req.params.studentId);
+    if (!entry) return res.status(404).json("Student not enrolled");
+
+    entry.score = Number(req.body.score);
+    entry.grade = req.body.grade;
+    await course.save();
+    res.json("Grade saved");
+});
+
+app.post("/my-courses/:id/enroll", async (req, res) => {
+    const course = await MyCourse.findById(req.params.id);
+    const already = course.students.find((s) => String(s.student) === req.body.student);
+
+    if (already) {
+        return res.status(400).json("Student already enrolled");
+    }
+
+    course.students.push({ student: req.body.student, section: req.body.section, score: 0, grade: "" });
+    await course.save();
+    res.json("Student enrolled");
+});
+
+// kunin yung course + section
+async function getEnrollments(studentId) {
+    if (!mongoose.Types.ObjectId.isValid(studentId)) return [];
+
+    const courses = await MyCourse.find({ "students.student": studentId });
+    return courses.map((c) => {
+        const me = c.students.find((s) => String(s.student) === studentId);
+        return { names: [c.name, c.code], section: me.section, score: me.score, grade: me.grade };
+    });
+}
 app.listen(5000, () => {
     console.log("Server running on port 5000");
 });

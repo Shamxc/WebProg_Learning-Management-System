@@ -1,4 +1,4 @@
-import { Alert, Button, Dialog, DialogContent, DialogTitle, TextField } from '@mui/material';
+import { Alert, Button, Dialog, DialogContent, DialogTitle, MenuItem, TextField } from '@mui/material';
 import { Fragment, useEffect, useState } from 'react';
 import axios from 'axios';
 import Sidebar from './Sidebar';
@@ -22,15 +22,62 @@ function MyCoursesPage() {
     const [text, setText] = useState('');
     const [message, setMessage] = useState('');
     const [isError, setIsError] = useState(false);
+    const [allStudents, setAllStudents] = useState([]);
+    const [enrollStudent, setEnrollStudent] = useState('');
+    const [enrollSection, setEnrollSection] = useState('');
+    const [announceSection, setAnnounceSection] = useState('');
+    const [gradeScore, setGradeScore] = useState('');
+    const [gradeLetter, setGradeLetter] = useState('');
 
     // pangkuwa
-    useEffect(() => {
+    function loadCourses(){
         axios
             .get("http://localhost:5000/my-courses")
             .then((response) => {
                 setCourses(response.data);
             });
+    }
+
+    useEffect(() => {
+        loadCourses();
+
+        axios
+            .get("http://localhost:5000/students")
+            .then((response) => {
+                setAllStudents(response.data.filter((s) => s.role === 'STUDENT'));
+            });
     }, []);
+
+    function openEnroll(course){
+        setSelected(course);
+        setEnrollStudent('');
+        setEnrollSection('');
+        setMessage('');
+        setModal('enroll');
+    }
+
+    // pang enroll
+    function saveEnroll(){
+        if (enrollStudent === "" || enrollSection.trim() === "") {
+            setIsError(true);
+            setMessage("Please choose a student and enter a section");
+            return;
+        }
+
+        axios
+            .post("http://localhost:5000/my-courses/" + selected._id + "/enroll", {
+                student: enrollStudent,
+                section: enrollSection.trim().toUpperCase()
+            })
+            .then(() => {
+                loadCourses();
+                setModal('');
+            })
+            .catch((error) => {
+                setIsError(true);
+                setMessage(error.response ? error.response.data : "Something went wrong");
+            });
+    }
 
     function openInfo(course){
         setSelected(course);
@@ -42,13 +89,39 @@ function MyCoursesPage() {
         setTitle('');
         setText('');
         setMessage('');
+        setAnnounceSection('');
         setModal('announce');
     }
 
     function openGrade(course, student){
         setSelected(course);
         setSelectedStudent(student);
+        setGradeScore(student.score);
+        setGradeLetter(student.grade || '');
+        setMessage('');
         setModal('grade');
+    }
+
+    function saveGrade(){
+        if (gradeScore === "" || isNaN(Number(gradeScore)) || Number(gradeScore) < 0 || Number(gradeScore) > 100 || gradeLetter.trim() === "") {
+            setIsError(true);
+            setMessage("Enter a score from 0 to 100 and a grade");
+            return;
+        }
+
+        axios
+            .put("http://localhost:5000/my-courses/" + selected._id + "/students/" + selectedStudent.student._id, {
+                score: Number(gradeScore),
+                grade: gradeLetter.trim().toUpperCase()
+            })
+            .then(() => {
+                loadCourses();
+                setModal('');
+            })
+            .catch((error) => {
+                setIsError(true);
+                setMessage(error.response ? error.response.data : "Something went wrong");
+            });
     }
 
     function openLesson(course, module){
@@ -59,7 +132,7 @@ function MyCoursesPage() {
 
     // pang post ng announcement
     function postAnnouncement(){
-        if (title.trim() === "" || text.trim() === "") {
+        if (title.trim() === "" || text.trim() === "" || announceSection === "") {
             setIsError(true);
             setMessage("Please fill in all fields");
             return;
@@ -67,11 +140,12 @@ function MyCoursesPage() {
 
         axios
             .post("http://localhost:5000/announcements", {
-                course: selected.name,
-                title: title,
-                message: text,
-                date: new Date().toISOString().slice(0, 10)
-            })
+                    course: selected.name,
+                    section: announceSection,
+                    title: title,
+                    message: text,
+                    date: new Date().toISOString().slice(0, 10)
+                })
             .then((response) => {
                 setIsError(false);
                 setMessage(response.data);
@@ -102,6 +176,7 @@ function MyCoursesPage() {
                                 <h3>{course.name} ({course.code})</h3>
                                 <p>{course.students.length} students enrolled</p>
                                 <Button onClick={() => openInfo(course)} variant="contained" sx={{ ...btn, marginRight: 1 }}>Course Information</Button>
+                                <Button onClick={() => openEnroll(course)} variant="contained" sx={{ ...btn, marginRight: 1 }}>Enroll Student</Button>
                                 <Button onClick={() => openAnnounce(course)} variant="contained" sx={{ ...btn, backgroundColor: '#fff', color: '#5B27C9', '&:hover': { backgroundColor: '#E4F0FF' } }}>Post Announcement</Button>
                             </div>
 
@@ -113,6 +188,7 @@ function MyCoursesPage() {
                                         <tr>
                                             <th style={cell}>Name</th>
                                             <th style={cell}>Email</th>
+                                            <th style={cell}>Section</th>
                                             <th style={cell}>Score</th>
                                             <th style={cell}>Grade</th>
                                             <th style={cell}></th>
@@ -123,6 +199,7 @@ function MyCoursesPage() {
                                             <tr key={s._id}>
                                                 <td style={cell}>{s.student.firstName} {s.student.lastName}</td>
                                                 <td style={cell}>{s.student.email}</td>
+                                                <td style={cell}>{s.section}</td>
                                                 <td style={cell}>{s.score}%</td>
                                                 <td style={cell}>{s.grade}</td>
                                                 <td style={cell}>
@@ -152,6 +229,28 @@ function MyCoursesPage() {
 
             </div>
 
+            <Dialog open={modal === 'enroll'} onClose={() => setModal('')} fullWidth maxWidth="sm">
+                <DialogTitle style={modalTitle}>
+                    Enroll Student
+                    <Button onClick={() => setModal('')} sx={closeBtn}>X</Button>
+                </DialogTitle>
+                <DialogContent>
+                    <br/>
+                    <TextField select label="Student" value={enrollStudent} onChange={(e) => setEnrollStudent(e.target.value)} variant="outlined" fullWidth>
+                        {allStudents.map((s) => (
+                            <MenuItem key={s._id} value={s._id}>{s.firstName} {s.lastName}</MenuItem>
+                        ))}
+                    </TextField>
+                    <br/> <br/>
+                    <TextField label="Section" value={enrollSection} onChange={(e) => setEnrollSection(e.target.value)} variant="outlined" fullWidth />
+                    <br/> <br/>
+
+                    {message && <Alert severity={isError ? "error" : "success"} sx={{ marginBottom: 2 }}>{message}</Alert>}
+
+                    <Button onClick={saveEnroll} variant="contained" fullWidth sx={btn}>Enroll</Button>
+                </DialogContent>
+            </Dialog>
+
             <Dialog open={modal === 'info'} onClose={() => setModal('')} fullWidth maxWidth="sm">
                 <DialogTitle style={modalTitle}>
                     Course Information
@@ -176,6 +275,12 @@ function MyCoursesPage() {
                 </DialogTitle>
                 <DialogContent>
                     <br/>
+                    <TextField select label="Section" value={announceSection} onChange={(e) => setAnnounceSection(e.target.value)} variant="outlined" fullWidth>
+                        {selected && [...new Set(selected.students.map((s) => s.section))].map((sec) => (
+                            <MenuItem key={sec} value={sec}>{sec}</MenuItem>
+                        ))}
+                    </TextField>
+                    <br/> <br/>
                     <TextField label="Title" value={title} onChange={(e) => setTitle(e.target.value)} variant="outlined" fullWidth />
                     <br/> <br/>
                     <TextField label="Message" value={text} onChange={(e) => setText(e.target.value)} variant="outlined" fullWidth multiline rows={4} />
@@ -198,8 +303,15 @@ function MyCoursesPage() {
                             <p><b>Student:</b> {selectedStudent.student.firstName} {selectedStudent.student.lastName}</p>
                             <p><b>Email:</b> {selectedStudent.student.email}</p>
                             <p><b>Course:</b> {selected.name}</p>
-                            <p><b>Score:</b> {selectedStudent.score}%</p>
-                            <p><b>Grade:</b> {selectedStudent.grade}</p>
+                            <br/>
+                            <TextField label="Score (%)" type="number" value={gradeScore} onChange={(e) => setGradeScore(e.target.value)} variant="outlined" fullWidth />
+                            <br/> <br/>
+                            <TextField label="Grade (example: A)" value={gradeLetter} onChange={(e) => setGradeLetter(e.target.value)} variant="outlined" fullWidth />
+                            <br/> <br/>
+
+                            {message && <Alert severity={isError ? "error" : "success"} sx={{ marginBottom: 2 }}>{message}</Alert>}
+
+                            <Button onClick={saveGrade} variant="contained" fullWidth sx={btn}>Save Grade</Button>
                         </div>
                     )}
                 </DialogContent>

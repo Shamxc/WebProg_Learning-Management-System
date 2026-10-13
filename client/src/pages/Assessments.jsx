@@ -1,4 +1,4 @@
-import { Alert, Button, Dialog, DialogContent, DialogTitle, TextField } from '@mui/material';
+import { Alert, Button, Dialog, DialogContent, DialogTitle, MenuItem, TextField } from '@mui/material';
 import { useEffect, useState } from 'react';
 import axios from 'axios';
 import Sidebar from './Sidebar';
@@ -16,19 +16,34 @@ function AssessmentsPage() {
     const canManage = role === 'TEACHER' || role === 'ADMIN';
 
     const [assessments, setAssessments] = useState([]);
+    const [courseList, setCourseList] = useState([]);
     const [modal, setModal] = useState('');
     const [selected, setSelected] = useState(null);
     const [message, setMessage] = useState('');
     const [editName, setEditName] = useState('');
     const [editCourse, setEditCourse] = useState('');
+    const [editSection, setEditSection] = useState('');
     const [editType, setEditType] = useState('');
     const [editDue, setEditDue] = useState('');
     const [editDescription, setEditDescription] = useState('');
 
+    // dropdown options: courses from mycourse, sections from the students enrolled in the chosen course
+    const courses = courseList.map((c) => c.name);
+    const [sections, setSections] = useState([]);
+    useEffect(() => {
+        axios
+            .get("http://localhost:5000/sections")
+            .then((response) => {
+                console.log("sections:", response.data);
+                setSections(Array.isArray(response.data) ? response.data : []);
+            })
+            .catch((error) => console.log("sections error:", error));
+    }, []);
+
     // pangkuha
     function loadAssessments(){
         axios
-            .get("http://localhost:5000/assessments")
+            .get("http://localhost:5000/assessments", { params: canManage ? {} : { student: localStorage.getItem("studentId") } })
             .then((response) => {
                 setAssessments(Array.isArray(response.data) ? response.data : []);
             })
@@ -40,7 +55,20 @@ function AssessmentsPage() {
 
     useEffect(() => {
         loadAssessments();
+        axios
+            .get("http://localhost:5000/my-courses")
+            .then((response) => {
+                setCourseList(Array.isArray(response.data) ? response.data : []);
+            })
+            .catch(() => setCourseList([]));
     }, []);
+
+    function formatDate(value){
+        if (!value) return '';
+        const d = new Date(String(value).slice(0, 10) + 'T00:00:00');
+        if (isNaN(d.getTime())) return value;
+        return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    }
 
     function openDetails(assessment){
         setSelected(assessment);
@@ -50,6 +78,7 @@ function AssessmentsPage() {
     function openAdd(){
         setEditName('');
         setEditCourse('');
+        setEditSection('');
         setEditType('');
         setEditDue('');
         setEditDescription('');
@@ -61,8 +90,9 @@ function AssessmentsPage() {
         setSelected(assessment);
         setEditName(assessment.name);
         setEditCourse(assessment.course);
+        setEditSection(assessment.section || '');
         setEditType(assessment.type);
-        setEditDue(assessment.due);
+        setEditDue(String(assessment.due).slice(0, 10));
         setEditDescription(assessment.description);
         setMessage('');
         setModal('edit');
@@ -85,6 +115,7 @@ function AssessmentsPage() {
             .post("http://localhost:5000/assessments", {
                 name: editName,
                 course: editCourse,
+                section: editSection,
                 type: editType,
                 due: editDue,
                 description: editDescription
@@ -109,6 +140,7 @@ function AssessmentsPage() {
             .put("http://localhost:5000/assessments/" + selected._id, {
                 name: editName,
                 course: editCourse,
+                section: editSection,
                 type: editType,
                 due: editDue,
                 description: editDescription
@@ -154,6 +186,7 @@ function AssessmentsPage() {
                             <tr>
                                 <th style={cell}>Name</th>
                                 <th style={cell}>Class</th>
+                                {canManage && <th style={cell}>Section</th>}
                                 <th style={cell}>Type</th>
                                 <th style={cell}>Due</th>
                                 {!canManage && <th style={cell}>Score / Status</th>}
@@ -165,8 +198,9 @@ function AssessmentsPage() {
                                 <tr key={a._id}>
                                     <td style={cell}>{a.name}</td>
                                     <td style={cell}>{a.course}</td>
+                                    {canManage && <td style={cell}>{a.section}</td>}
                                     <td style={cell}>{a.type}</td>
-                                    <td style={cell}>{a.due}</td>
+                                    <td style={cell}>{formatDate(a.due)}</td>
                                     {!canManage && <td style={cell}>{a.status}</td>}
                                     <td style={cell}>
                                         <div style={{ display: 'flex', gap: 8 }}>
@@ -196,8 +230,9 @@ function AssessmentsPage() {
                         <div>
                             <p>{selected.description}</p>
                             <p><b>Class:</b> {selected.course}</p>
+                            {canManage && <p><b>Section:</b> {selected.section}</p>}
                             <p><b>Type:</b> {selected.type}</p>
-                            <p><b>Due:</b> {selected.due}</p>
+                            <p><b>Due:</b> {formatDate(selected.due)}</p>
                             {!canManage && <p><b>Score / Status:</b> {selected.status}</p>}
                         </div>
                     )}
@@ -216,11 +251,24 @@ function AssessmentsPage() {
                     <br/>
                     <TextField label="Name" value={editName} onChange={(e) => setEditName(e.target.value)} variant="outlined" fullWidth />
                     <br/> <br/>
-                    <TextField label="Class" value={editCourse} onChange={(e) => setEditCourse(e.target.value)} variant="outlined" fullWidth />
+                    <TextField select label="Class" value={editCourse} onChange={(e) => { setEditCourse(e.target.value); setEditSection(''); }} variant="outlined" fullWidth>
+                        {courses.map((c) => (
+                            <MenuItem key={c} value={c}>{c}</MenuItem>
+                        ))}
+                    </TextField>
                     <br/> <br/>
-                    <TextField label="Type (Quiz or Assignment)" value={editType} onChange={(e) => setEditType(e.target.value)} variant="outlined" fullWidth />
+                    <TextField select label="Section" value={editSection} onChange={(e) => setEditSection(e.target.value)} variant="outlined" fullWidth>
+                        {sections.map((s) => (
+                            <MenuItem key={s} value={s}>{s}</MenuItem>
+                        ))}
+                    </TextField>
                     <br/> <br/>
-                    <TextField label="Due (example: Oct 14)" value={editDue} onChange={(e) => setEditDue(e.target.value)} variant="outlined" fullWidth />
+                    <TextField select label="Type" value={editType} onChange={(e) => setEditType(e.target.value)} variant="outlined" fullWidth>
+                        <MenuItem value="Quiz">Quiz</MenuItem>
+                        <MenuItem value="Assignment">Assignment</MenuItem>
+                    </TextField>
+                    <br/> <br/>
+                    <TextField label="Due Date" type="date" value={editDue} onChange={(e) => setEditDue(e.target.value)} variant="outlined" fullWidth InputLabelProps={{ shrink: true }} />
                     <br/> <br/>
                     <TextField label="Description" value={editDescription} onChange={(e) => setEditDescription(e.target.value)} variant="outlined" fullWidth multiline rows={3} />
                     <br/> <br/>

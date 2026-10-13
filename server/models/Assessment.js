@@ -7,6 +7,7 @@ const assessmentSchema = new mongoose.Schema({
     due:String,
     status:String,
     description:String,
+    section:String,
 });
 
 module.exports = mongoose.model("assessment", assessmentSchema);

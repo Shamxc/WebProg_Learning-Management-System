@@ -17,9 +17,9 @@ function MyLearningPage() {
     // pangkuwa
     useEffect(() => {
         axios
-            .get("http://localhost:5000/courses")
+            .get("http://localhost:5000/courses", { params: localStorage.getItem("role") === 'STUDENT' ? { student: localStorage.getItem("studentId") } : {} })
             .then((response) => {
-                setCourses(response.data);
+                setCourses(Array.isArray(response.data) ? response.data : []);
             });
     }, []);
 
@@ -45,8 +45,9 @@ function MyLearningPage() {
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 20 }}>
                     {courses.map((course, index) => (
                         <div key={course._id} style={card}>
-                            <div style={{ height: 80, borderRadius: 12, background: colors[index % colors.length], marginBottom: 12 }}></div>
-                            <h3>{course.name}</h3>
+                            <div style={{ height: 80, borderRadius: 12, background: colors[index % colors.length], marginBottom: 12, display: 'flex', alignItems: 'center', padding: '0 16px', color: '#fff' }}>
+                                <h3 style={{ margin: 0 }}>{course.name}</h3>
+                            </div>
                             <p>Instructor: {course.instructor}</p>
                             <p>Grade: {course.grade}</p>
                             <Button onClick={() => openDetails(course)} variant="contained" sx={btn}>Course Details</Button>

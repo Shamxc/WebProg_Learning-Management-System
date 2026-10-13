@@ -26,7 +26,7 @@ function AnnouncementsPage() {
     // pangkuwa
     function loadAnnouncements(){
         axios
-            .get("http://localhost:5000/announcements")
+            .get("http://localhost:5000/announcements", { params: canManage ? {} : { student: localStorage.getItem("studentId") } })
             .then((response) => {
                 setAnnouncements(response.data);
             });
