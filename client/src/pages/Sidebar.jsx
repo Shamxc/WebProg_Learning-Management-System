@@ -53,7 +53,6 @@ function Sidebar({ active }) {
                 <Link to="/dashboard" style={link('Dashboard')}>Dashboard</Link>
                 <Link to="/profile" style={link('Profile')}>Profile</Link>
                 <Link to="/announcements" style={link('Announcements')}>Announcements</Link>
-                {role === 'ADMIN' && <Link to="/announcements" style={link('Announcements')}>Announcements</Link>}
                 {role === 'STUDENT' && <Link to="/my-learning" style={link('My Learning')}>My Learning</Link>}
                 {role === 'ADMIN' && <Link to="/courses" style={link('Courses')}>Courses</Link>}
                 {role === 'TEACHER' && <Link to="/my-courses" style={link('My Courses')}>My Courses</Link>}
@@ -61,7 +60,7 @@ function Sidebar({ active }) {
                 <Link to="/assessments" style={link('Assessments')}>Assessments</Link>
                 {role === 'TEACHER' && <Link to="/gradebook" style={link('Gradebook')}>Gradebook</Link>}
 
-                <Link to="/login" style={{ ...link('Logout'), marginTop: 'auto', marginBottom: 0, position: 'relative', zIndex: 1 }}>Logout</Link>
+                <Link to="/login" onClick={() => localStorage.clear()} style={{ ...link('Logout'), marginTop: 'auto', marginBottom: 0, position: 'relative', zIndex: 1 }}>Logout</Link>
 
                 <div style={{ position: 'absolute', left: -90, bottom: -110, width: 240, height: 240, borderRadius: '50%', backgroundColor: '#2F6BFF' }}></div>
 

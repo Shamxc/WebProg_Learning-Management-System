@@ -15,6 +15,7 @@ function AnnouncementsPage() {
 
     const role = localStorage.getItem("role");
     const canManage = role === 'TEACHER' || role === 'ADMIN';
+    const isAdmin = role === 'ADMIN';
 
     const [announcements, setAnnouncements] = useState([]);
     const [modal, setModal] = useState('');
@@ -22,6 +23,11 @@ function AnnouncementsPage() {
     const [editTitle, setEditTitle] = useState('');
     const [editMessage, setEditMessage] = useState('');
     const [message, setMessage] = useState('');
+
+    // pang new announcement (admin)
+    const [newCourse, setNewCourse] = useState('ALL');
+    const [newTitle, setNewTitle] = useState('');
+    const [newMessage, setNewMessage] = useState('');
 
     // pangkuwa
     function loadAnnouncements(){
@@ -35,6 +41,13 @@ function AnnouncementsPage() {
     useEffect(() => {
         loadAnnouncements();
     }, []);
+
+    // teacher can only manage announcements that aren't admin broadcasts (course !== 'ALL')
+    function canEditAnnouncement(a){
+        if (isAdmin) return true;
+        if (role === 'TEACHER') return a.course !== 'ALL';
+        return false;
+    }
 
     function openDetails(a){
         setSelected(a);
@@ -53,6 +66,14 @@ function AnnouncementsPage() {
         setSelected(a);
         setMessage('');
         setModal('remove');
+    }
+
+    function openNew(){
+        setNewCourse('ALL');
+        setNewTitle('');
+        setNewMessage('');
+        setMessage('');
+        setModal('new');
     }
 
     // pangedit
@@ -89,6 +110,29 @@ function AnnouncementsPage() {
             });
     }
 
+    // pang new announcement (admin)
+    function saveNew(){
+        if (newTitle.trim() === "" || newMessage.trim() === "") {
+            setMessage("Please fill in all fields");
+            return;
+        }
+
+        axios
+            .post("http://localhost:5000/announcements", {
+                course: newCourse.trim() === "" ? "ALL" : newCourse.trim(),
+                title: newTitle,
+                message: newMessage,
+                date: new Date().toISOString().slice(0, 10)
+            })
+            .then(() => {
+                loadAnnouncements();
+                setModal('');
+            })
+            .catch(() => {
+                setMessage("Something went wrong");
+            });
+    }
+
     return (
         <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#E4F0FF', color: '#1B1535', fontFamily: 'Figtree, sans-serif' }}>
 
@@ -98,7 +142,10 @@ function AnnouncementsPage() {
 
             <div style={{ maxWidth: 800, margin: '0 auto' }}>
 
-                <h1>Announcements</h1>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <h1>Announcements</h1>
+                    {isAdmin && <Button onClick={openNew} variant="contained" sx={btn}>Add Announcement</Button>}
+                </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
 
@@ -115,12 +162,12 @@ function AnnouncementsPage() {
                             <div key={a._id} style={row}>
                                 <div>
                                     <strong>{a.title}</strong>
-                                    <div>{a.course} - {a.message}</div>
+                                    <div>{a.course === 'ALL' ? a.message : a.course + " - " + a.message}</div>
                                 </div>
                                 <div style={{ display: 'flex', gap: 8 }}>
                                     <Button onClick={() => openDetails(a)} variant="contained" size="small" sx={btn}>Details</Button>
-                                    {canManage && <Button onClick={() => openEdit(a)} variant="outlined" size="small" sx={outlined}>Edit</Button>}
-                                    {canManage && <Button onClick={() => openRemove(a)} variant="contained" size="small" sx={red}>Remove</Button>}
+                                    {canEditAnnouncement(a) && <Button onClick={() => openEdit(a)} variant="outlined" size="small" sx={outlined}>Edit</Button>}
+                                    {canEditAnnouncement(a) && <Button onClick={() => openRemove(a)} variant="contained" size="small" sx={red}>Remove</Button>}
                                 </div>
                             </div>
                         ))}
@@ -143,7 +190,7 @@ function AnnouncementsPage() {
                     {selected && (
                         <div>
                             <p>{selected.message}</p>
-                            <p><b>Course:</b> {selected.course}</p>
+                            <p><b>Course:</b> {selected.course === 'ALL' ? 'All students' : selected.course}</p>
                             <p><b>Posted:</b> {selected.date}</p>
                         </div>
                     )}
@@ -181,6 +228,33 @@ function AnnouncementsPage() {
                     {message && <Alert severity="error" sx={{ marginBottom: 2 }}>{message}</Alert>}
 
                     <Button onClick={removeAnnouncement} variant="contained" fullWidth sx={red}>Yes, Remove</Button>
+                </DialogContent>
+            </Dialog>
+
+            <Dialog open={modal === 'new'} onClose={() => setModal('')} fullWidth maxWidth="sm">
+                <DialogTitle style={modalTitle}>
+                    New Announcement
+                    <Button onClick={() => setModal('')} sx={closeBtn}>X</Button>
+                </DialogTitle>
+
+                <DialogContent>
+                    <br/>
+                    <TextField
+                        label="Course (leave ALL to broadcast to everyone)"
+                        value={newCourse}
+                        onChange={(e) => setNewCourse(e.target.value)}
+                        variant="outlined"
+                        fullWidth
+                    />
+                    <br/> <br/>
+                    <TextField label="Title" value={newTitle} onChange={(e) => setNewTitle(e.target.value)} variant="outlined" fullWidth />
+                    <br/> <br/>
+                    <TextField label="Message" value={newMessage} onChange={(e) => setNewMessage(e.target.value)} variant="outlined" fullWidth multiline rows={4} />
+                    <br/> <br/>
+
+                    {message && <Alert severity="error" sx={{ marginBottom: 2 }}>{message}</Alert>}
+
+                    <Button onClick={saveNew} variant="contained" fullWidth sx={btn}>Post</Button>
                 </DialogContent>
             </Dialog>
 

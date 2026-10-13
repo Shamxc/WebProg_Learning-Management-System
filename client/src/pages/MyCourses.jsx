@@ -1,5 +1,5 @@
 import { Alert, Button, Dialog, DialogContent, DialogTitle, MenuItem, TextField } from '@mui/material';
-import { Fragment, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import axios from 'axios';
 import Sidebar from './Sidebar';
 
@@ -14,6 +14,7 @@ function MyCoursesPage() {
     const closeBtn = { minWidth: 0, fontSize: 20, color: '#1B1535' }
 
     const [courses, setCourses] = useState([]);
+    const [page, setPage] = useState(0);
     const [modal, setModal] = useState('');
     const [selected, setSelected] = useState(null);
     const [selectedStudent, setSelectedStudent] = useState(null);
@@ -31,11 +32,62 @@ function MyCoursesPage() {
 
     // pangkuwa
     function loadCourses(){
-        axios
-            .get("http://localhost:5000/my-courses")
-            .then((response) => {
-                setCourses(response.data);
+        const studentId = localStorage.getItem("studentId");
+
+        Promise.all([
+            axios.get("http://localhost:5000/my-courses"),
+            axios.get("http://localhost:5000/courses"),
+            axios.get("http://localhost:5000/students")
+        ]).then(([myRes, allRes, studentsRes]) => {
+            const all = Array.isArray(allRes.data) ? allRes.data : [];
+            const mine = Array.isArray(myRes.data) ? myRes.data : [];
+            const students = Array.isArray(studentsRes.data) ? studentsRes.data : [];
+
+            const me = students.find((s) => s._id === studentId);
+            const myName = me ? ((me.firstName || '') + " " + (me.lastName || '')).trim() : '';
+
+            console.log("Teacher name:", JSON.stringify(myName));
+            console.log("All courses:", all.map((c) => `${c.name} -> ${JSON.stringify(c.instructor)}`));
+            console.log("My courses (raw):", mine.map((c) => c.name));
+
+            // 1. Courses where I'm the instructor
+            const assigned = all.filter(
+                (c) => (c.instructor || '').trim().toLowerCase() === myName.toLowerCase()
+            );
+
+            console.log("Assigned courses:", assigned.map((c) => c.name));
+
+            // 2. Enrich each with MyCourse data (students, modules) if it exists
+            const result = assigned.map((course) => {
+                const detailed = mine.find(
+                    (m) => (m.name || '').trim().toLowerCase() === (course.name || '').trim().toLowerCase()
+                );
+
+                if (detailed) {
+                    // has a MyCourse entry -> use its students/modules/code
+                    return {
+                        ...course,
+                        _id: detailed._id,             // use MyCourse id for enroll/grade calls
+                        code: detailed.code || '',
+                        students: detailed.students || [],
+                        modules: detailed.modules || []
+                    };
+                }
+
+                // no MyCourse entry -> show empty course so teacher still sees it
+                return {
+                    ...course,
+                    code: course.code || '',
+                    students: [],
+                    modules: []
+                };
             });
+
+            console.log("Final courses:", result.map((c) => c.name));
+
+            setCourses(result);
+            setPage((p) => (p >= result.length && result.length > 0 ? result.length - 1 : p));
+        });
     }
 
     useEffect(() => {
@@ -56,7 +108,6 @@ function MyCoursesPage() {
         setModal('enroll');
     }
 
-    // pang enroll
     function saveEnroll(){
         if (enrollStudent === "" || enrollSection.trim() === "") {
             setIsError(true);
@@ -79,17 +130,11 @@ function MyCoursesPage() {
             });
     }
 
-    function openInfo(course){
-        setSelected(course);
-        setModal('info');
-    }
+    function openInfo(course){ setSelected(course); setModal('info'); }
 
     function openAnnounce(course){
         setSelected(course);
-        setTitle('');
-        setText('');
-        setMessage('');
-        setAnnounceSection('');
+        setTitle(''); setText(''); setMessage(''); setAnnounceSection('');
         setModal('announce');
     }
 
@@ -114,10 +159,7 @@ function MyCoursesPage() {
                 score: Number(gradeScore),
                 grade: gradeLetter.trim().toUpperCase()
             })
-            .then(() => {
-                loadCourses();
-                setModal('');
-            })
+            .then(() => { loadCourses(); setModal(''); })
             .catch((error) => {
                 setIsError(true);
                 setMessage(error.response ? error.response.data : "Something went wrong");
@@ -130,7 +172,6 @@ function MyCoursesPage() {
         setModal('lesson');
     }
 
-    // pang post ng announcement
     function postAnnouncement(){
         if (title.trim() === "" || text.trim() === "" || announceSection === "") {
             setIsError(true);
@@ -140,23 +181,22 @@ function MyCoursesPage() {
 
         axios
             .post("http://localhost:5000/announcements", {
-                    course: selected.name,
-                    section: announceSection,
-                    title: title,
-                    message: text,
-                    date: new Date().toISOString().slice(0, 10)
-                })
+                course: selected.name,
+                section: announceSection,
+                title: title,
+                message: text,
+                date: new Date().toISOString().slice(0, 10)
+            })
             .then((response) => {
                 setIsError(false);
                 setMessage(response.data);
-                setTitle('');
-                setText('');
+                setTitle(''); setText('');
             })
-            .catch(() => {
-                setIsError(true);
-                setMessage("Something went wrong");
-            });
+            .catch(() => { setIsError(true); setMessage("Something went wrong"); });
     }
+
+    const current = courses[page];
+    const totalPages = courses.length;
 
     return (
         <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#E4F0FF', color: '#1B1535', fontFamily: 'Figtree, sans-serif' }}>
@@ -167,65 +207,79 @@ function MyCoursesPage() {
 
                 <h1>My Courses</h1>
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+                {courses.length === 0 && (
+                    <div style={card}>
+                        <p>You have no courses assigned yet.</p>
+                    </div>
+                )}
 
-                    {courses.map((course) => (
-                        <Fragment key={course._id}>
+                {current && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
 
-                            <div style={{ ...card, backgroundColor: '#5B27C9', color: '#fff' }}>
-                                <h3>{course.name} ({course.code})</h3>
-                                <p>{course.students.length} students enrolled</p>
-                                <Button onClick={() => openInfo(course)} variant="contained" sx={{ ...btn, marginRight: 1 }}>Course Information</Button>
-                                <Button onClick={() => openEnroll(course)} variant="contained" sx={{ ...btn, marginRight: 1 }}>Enroll Student</Button>
-                                <Button onClick={() => openAnnounce(course)} variant="contained" sx={{ ...btn, backgroundColor: '#fff', color: '#5B27C9', '&:hover': { backgroundColor: '#E4F0FF' } }}>Post Announcement</Button>
-                            </div>
+                        <div style={{ ...card, backgroundColor: '#5B27C9', color: '#fff' }}>
+                            <h3>{current.name}{current.code ? " (" + current.code + ")" : ""}</h3>
+                            <p>{current.students.length} students enrolled</p>
+                            <Button onClick={() => openInfo(current)} variant="contained" sx={{ ...btn, marginRight: 1 }}>Course Information</Button>
+                            <Button onClick={() => openEnroll(current)} variant="contained" sx={{ ...btn, marginRight: 1 }}>Enroll Student</Button>
+                            <Button onClick={() => openAnnounce(current)} variant="contained" sx={{ ...btn, backgroundColor: '#fff', color: '#5B27C9', '&:hover': { backgroundColor: '#E4F0FF' } }}>Post Announcement</Button>
+                        </div>
 
-                            <div style={card}>
-                                <h3>Students</h3>
+                        <div style={card}>
+                            <h3>Students</h3>
+                            {current.students.length === 0 && <p>No students enrolled yet.</p>}
+                            {current.students.length > 0 && (
                                 <div style={{ overflowX: 'auto' }}>
-                                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                                    <thead>
-                                        <tr>
-                                            <th style={cell}>Name</th>
-                                            <th style={cell}>Email</th>
-                                            <th style={cell}>Section</th>
-                                            <th style={cell}>Score</th>
-                                            <th style={cell}>Grade</th>
-                                            <th style={cell}></th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {course.students.map((s) => (
-                                            <tr key={s._id}>
-                                                <td style={cell}>{s.student.firstName} {s.student.lastName}</td>
-                                                <td style={cell}>{s.student.email}</td>
-                                                <td style={cell}>{s.section}</td>
-                                                <td style={cell}>{s.score}%</td>
-                                                <td style={cell}>{s.grade}</td>
-                                                <td style={cell}>
-                                                    <Button onClick={() => openGrade(course, s)} variant="outlined" size="small" sx={outlined}>Details</Button>
-                                                </td>
+                                    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                                        <thead>
+                                            <tr>
+                                                <th style={cell}>Name</th>
+                                                <th style={cell}>Email</th>
+                                                <th style={cell}>Section</th>
+                                                <th style={cell}>Score</th>
+                                                <th style={cell}>Grade</th>
+                                                <th style={cell}></th>
                                             </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
+                                        </thead>
+                                        <tbody>
+                                            {current.students.map((s) => (
+                                                <tr key={s._id}>
+                                                    <td style={cell}>{s.student.firstName} {s.student.lastName}</td>
+                                                    <td style={cell}>{s.student.email}</td>
+                                                    <td style={cell}>{s.section}</td>
+                                                    <td style={cell}>{s.score}%</td>
+                                                    <td style={cell}>{s.grade}</td>
+                                                    <td style={cell}>
+                                                        <Button onClick={() => openGrade(current, s)} variant="outlined" size="small" sx={outlined}>Details</Button>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
                                 </div>
+                            )}
+                        </div>
+
+                        <div style={card}>
+                            <h3>Course Content</h3>
+                            {current.modules.length === 0 && <p>No modules yet.</p>}
+                            {current.modules.map((m) => (
+                                <div key={m._id} style={row}>
+                                    <span>{m.title}</span>
+                                    <Button onClick={() => openLesson(current, m)} variant="contained" size="small" sx={btn}>Preview Lesson</Button>
+                                </div>
+                            ))}
+                        </div>
+
+                        {totalPages > 1 && (
+                            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 12, marginTop: 10 }}>
+                                <Button onClick={() => setPage(page - 1)} disabled={page === 0} variant="outlined" sx={outlined}>← Previous</Button>
+                                <span style={{ fontWeight: 600 }}>Page {page + 1} of {totalPages}</span>
+                                <Button onClick={() => setPage(page + 1)} disabled={page >= totalPages - 1} variant="outlined" sx={outlined}>Next →</Button>
                             </div>
+                        )}
 
-                            <div style={card}>
-                                <h3>Course Content</h3>
-                                {course.modules.map((m) => (
-                                    <div key={m._id} style={row}>
-                                        <span>{m.title}</span>
-                                        <Button onClick={() => openLesson(course, m)} variant="contained" size="small" sx={btn}>Preview Lesson</Button>
-                                    </div>
-                                ))}
-                            </div>
-
-                        </Fragment>
-                    ))}
-
-                </div>
+                    </div>
+                )}
 
             </div>
 
@@ -244,9 +298,7 @@ function MyCoursesPage() {
                     <br/> <br/>
                     <TextField label="Section" value={enrollSection} onChange={(e) => setEnrollSection(e.target.value)} variant="outlined" fullWidth />
                     <br/> <br/>
-
                     {message && <Alert severity={isError ? "error" : "success"} sx={{ marginBottom: 2 }}>{message}</Alert>}
-
                     <Button onClick={saveEnroll} variant="contained" fullWidth sx={btn}>Enroll</Button>
                 </DialogContent>
             </Dialog>
@@ -259,7 +311,7 @@ function MyCoursesPage() {
                 <DialogContent>
                     {selected && (
                         <div>
-                            <p><b>{selected.name} ({selected.code})</b></p>
+                            <p><b>{selected.name}{selected.code ? " (" + selected.code + ")" : ""}</b></p>
                             <p>{selected.description}</p>
                             <p><b>Students enrolled:</b> {selected.students.length}</p>
                             <p><b>Modules:</b> {selected.modules.length}</p>
@@ -285,9 +337,7 @@ function MyCoursesPage() {
                     <br/> <br/>
                     <TextField label="Message" value={text} onChange={(e) => setText(e.target.value)} variant="outlined" fullWidth multiline rows={4} />
                     <br/> <br/>
-
                     {message && <Alert severity={isError ? "error" : "success"} sx={{ marginBottom: 2 }}>{message}</Alert>}
-
                     <Button onClick={postAnnouncement} variant="contained" fullWidth sx={btn}>Post</Button>
                 </DialogContent>
             </Dialog>
@@ -308,9 +358,7 @@ function MyCoursesPage() {
                             <br/> <br/>
                             <TextField label="Grade (example: A)" value={gradeLetter} onChange={(e) => setGradeLetter(e.target.value)} variant="outlined" fullWidth />
                             <br/> <br/>
-
                             {message && <Alert severity={isError ? "error" : "success"} sx={{ marginBottom: 2 }}>{message}</Alert>}
-
                             <Button onClick={saveGrade} variant="contained" fullWidth sx={btn}>Save Grade</Button>
                         </div>
                     )}

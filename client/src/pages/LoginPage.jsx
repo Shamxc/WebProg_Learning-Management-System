@@ -17,37 +17,39 @@ function LoginPage() {
 
     function login(){
 
-    if (email.trim() === "" || password === "") {
-        setIsError(true);
-        setMessage("Please fill in all fields");
-        return;
-    }
-
-    if (!email.includes("@") || !email.includes(".") || email.length > 30) {
-        setIsError(true);
-        setMessage("Please enter a valid email");
-        return;
-    }
-
-    axios
-        .post("http://localhost:5000/login", {
-            email: email,
-            password: password,
-            role: role
-        })
-
-        .then((response) => {
-            setIsError(false);
-            setEmail("");
-            setPassword("");
-            localStorage.setItem("studentId", response.data._id);
-            navigate("/dashboard");
-        })
-
-        .catch((error) => {
+        if (email.trim() === "" || password === "") {
             setIsError(true);
-            setMessage(error.response ? error.response.data : "Something went wrong");
-        });
+            setMessage("Please fill in all fields");
+            return;
+        }
+
+        if (!email.includes("@") || !email.includes(".") || email.length > 30) {
+            setIsError(true);
+            setMessage("Please enter a valid email");
+            return;
+        }
+
+        axios
+            .post("http://localhost:5000/login", {
+                email: email,
+                password: password,
+                role: role
+            })
+
+            .then((response) => {
+                setIsError(false);
+                setEmail("");
+                setPassword("");
+                // store role too so the dashboard can use it
+                localStorage.setItem("studentId", response.data._id);
+                localStorage.setItem("role", role);
+                navigate("/dashboard");
+            })
+
+            .catch((error) => {
+                setIsError(true);
+                setMessage(error.response ? error.response.data : "Something went wrong");
+            });
     }
 
     return (
@@ -72,8 +74,9 @@ function LoginPage() {
 
                 <div style={{ position: 'relative', marginTop: -30, padding: 30, backgroundColor: '#E4F0FF', borderRadius: '30px 0 0 0' }}>
                     <ToggleButtonGroup value={role} exclusive fullWidth onChange={(e, newRole) => { if (newRole) setRole(newRole); }} sx={{ backgroundColor: '#fff' }}>
-                        <ToggleButton value="STUDENT" sx={{ textTransform: 'none', fontWeight: 600 }}>Student</ToggleButton>
-                        <ToggleButton value="TEACHER" sx={{ textTransform: 'none', fontWeight: 600 }}>Teacher</ToggleButton>
+                        <ToggleButton value="STUDENT" sx={{ textTransform: 'none', fontWeight: 600, fontSize: 13, px: 1 }}>Student</ToggleButton>
+                        <ToggleButton value="TEACHER" sx={{ textTransform: 'none', fontWeight: 600, fontSize: 13, px: 1 }}>Teacher</ToggleButton>
+                        <ToggleButton value="ADMIN"   sx={{ textTransform: 'none', fontWeight: 600, fontSize: 13, px: 1 }}>Admin</ToggleButton>
                     </ToggleButtonGroup>
                     <br/> <br/>
                     <TextField label="Email" value={email} onChange={(e) => setEmail(e.target.value)} variant="outlined" fullWidth sx={{ backgroundColor: '#fff' }} />

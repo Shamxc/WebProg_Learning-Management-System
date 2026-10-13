@@ -101,6 +101,34 @@ app.get("/my-courses", async (req, res) => {
     res.json(courses);
 });
 
+// create course
+app.post("/courses", async (req, res) => {
+    const course = new Course({
+        name: req.body.name,
+        instructor: req.body.instructor,
+        description: req.body.description,
+    });
+
+    await course.save();
+    res.json(course);
+});
+
+// update course (instructor, name, description)
+app.put("/courses/:id", async (req, res) => {
+    const course = await Course.findByIdAndUpdate(
+        req.params.id,
+        {
+            name: req.body.name,
+            instructor: req.body.instructor,
+            description: req.body.description,
+        },
+        { new: true }
+    );
+
+    if (!course) return res.status(404).json("Course not found");
+    res.json(course);
+});
+
 app.get("/sections", async (req, res) => {
     const sections = await MyCourse.distinct("students.section");
     res.json(sections.filter(Boolean));
@@ -136,6 +164,7 @@ app.post("/announcements", async (req, res) => {
         title: req.body.title,
         message: req.body.message,
         date: req.body.date,
+        section: req.body.section,   
     });
 
     await announcement.save();
@@ -288,7 +317,27 @@ app.put("/my-courses/:id/students/:studentId", async (req, res) => {
 });
 
 app.post("/my-courses/:id/enroll", async (req, res) => {
-    const course = await MyCourse.findById(req.params.id);
+    let course = await MyCourse.findById(req.params.id);
+
+    // not a MyCourse id -> maybe it's a Course id. Find or create the matching MyCourse.
+    if (!course) {
+        const base = await Course.findById(req.params.id);
+        if (!base) return res.status(404).json("Course not found");
+
+        course = await MyCourse.findOne({ name: base.name });
+
+        if (!course) {
+            course = new MyCourse({
+                name: base.name,
+                code: "",
+                description: base.description || "",
+                students: [],
+                modules: []
+            });
+            await course.save();
+        }
+    }
+
     const already = course.students.find((s) => String(s.student) === req.body.student);
 
     if (already) {
