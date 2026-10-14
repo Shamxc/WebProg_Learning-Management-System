@@ -1,4 +1,4 @@
-import { Button, Dialog, DialogContent, DialogTitle, Table, TableBody, TableCell, TableHead, TableRow } from '@mui/material';
+import { Button, Dialog, DialogContent, DialogTitle, Table, TableBody, TableCell, TableHead, TableRow, TextField } from '@mui/material';
 import { useEffect, useState } from 'react';
 import axios from 'axios';
 import Sidebar from './Sidebar';
@@ -13,6 +13,7 @@ function MyLearningPage() {
     const [courses, setCourses] = useState([]);
     const [modal, setModal] = useState('');
     const [selected, setSelected] = useState(null);
+    const [search, setSearch] = useState('');
 
     // pangkuwa
     useEffect(() => {
@@ -42,8 +43,10 @@ function MyLearningPage() {
                     <Button onClick={() => setModal('grades')} variant="outlined" sx={{ color: '#5B27C9', borderColor: '#5B27C9' }}>Term Grades</Button>
                 </div>
 
+                <TextField label="Search courses" size="small" value={search} onChange={(e) => setSearch(e.target.value)} variant="outlined" fullWidth style={{ marginBottom: 20 }} />
+
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 20 }}>
-                    {courses.map((course, index) => (
+                    {courses.filter((course) => (course.name + ' ' + course.instructor).toLowerCase().includes(search.toLowerCase())).map((course, index) => (
                         <div key={course._id} style={card}>
                             <div style={{ height: 80, borderRadius: 12, background: colors[index % colors.length], marginBottom: 12, display: 'flex', alignItems: 'center', padding: '0 16px', color: '#fff' }}>
                                 <h3 style={{ margin: 0 }}>{course.name}</h3>

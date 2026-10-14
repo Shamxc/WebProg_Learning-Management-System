@@ -26,6 +26,16 @@ function CoursesPage() {
 
     const [allTeachers, setAllTeachers] = useState([]);
 
+    const [search, setSearch] = useState('');
+
+    function searchCourse(text){
+        setSearch(text);
+        const i = courses.findIndex((c) => c.name.toLowerCase().includes(text.toLowerCase()));
+        if (text !== '' && i !== -1) {
+            setPage(i);
+        }
+    }
+
     // edit instructor
     const [instructor, setInstructor] = useState('');
     // add course
@@ -128,7 +138,10 @@ function CoursesPage() {
 
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <h1>Courses</h1>
-                    {isAdmin && <Button onClick={openAdd} variant="contained" sx={btn}>Add Course</Button>}
+                    <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+                        <TextField label="Search courses" size="small" value={search} onChange={(e) => searchCourse(e.target.value)} variant="outlined" />
+                        {isAdmin && <Button onClick={openAdd} variant="contained" sx={btn}>Add Course</Button>}
+                    </div>
                 </div>
 
                 {courses.length === 0 && (

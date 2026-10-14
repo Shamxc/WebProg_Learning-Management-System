@@ -19,6 +19,8 @@ function AssessmentsPage() {
     const [courseList, setCourseList] = useState([]);
     const [modal, setModal] = useState('');
     const [selected, setSelected] = useState(null);
+    const [search, setSearch] = useState('');
+    const shown = assessments.filter((a) => (a.name + ' ' + a.course).toLowerCase().includes(search.toLowerCase()));
     const [message, setMessage] = useState('');
     const [editName, setEditName] = useState('');
     const [editCourse, setEditCourse] = useState('');
@@ -181,6 +183,8 @@ function AssessmentsPage() {
 
                 <div style={{ padding: 20, backgroundColor: '#fff', border: '1px solid #DFD7F0', borderRadius: 16 }}>
 
+                    <TextField label="Search assessments" size="small" value={search} onChange={(e) => setSearch(e.target.value)} variant="outlined" fullWidth style={{ marginBottom: 16 }} />
+
                     <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                         <thead>
                             <tr>
@@ -194,7 +198,7 @@ function AssessmentsPage() {
                             </tr>
                         </thead>
                         <tbody>
-                            {assessments.map((a) => (
+                            {shown.map((a) => (
                                 <tr key={a._id}>
                                     <td style={cell}>{a.name}</td>
                                     <td style={cell}>{a.course}</td>

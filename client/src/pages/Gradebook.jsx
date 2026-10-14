@@ -11,11 +11,11 @@ function GradebookPage() {
     const cell = { padding: 12, borderBottom: '1px solid #DFD7F0', textAlign: 'left' }
     const modalTitle = { display: 'flex', justifyContent: 'space-between', alignItems: 'center' }
     const closeBtn = { minWidth: 0, fontSize: 20, color: '#1B1535' }
+    const outlined = { color: '#5B27C9', borderColor: '#5B27C9', textTransform: 'none', fontWeight: 600, borderRadius: '12px' }
 
-    const courseCode = 'CS201';
+    const [courses, setCourses] = useState([]);
+    const [page, setPage] = useState(0);
 
-    const [courseName, setCourseName] = useState('');
-    const [students, setStudents] = useState([]);
     const [assessments, setAssessments] = useState([]);
     const [grades, setGrades] = useState([]);
     const [modal, setModal] = useState('');
@@ -29,13 +29,26 @@ function GradebookPage() {
     const [message, setMessage] = useState('');
     const [isError, setIsError] = useState(false);
 
-    // assessments ng course lang
-    const courseAssessments = assessments.filter((a) => a.course === courseName || a.course === courseCode);
+    const current = courses[page];
+    const totalPages = courses.length;
+    const courseCode = current ? current.code : '';
+    const courseName = current ? current.name : '';
+    const students = current ? current.students.map((s) => s.student) : [];
 
-    // pangkuwa ng grades
+    // grades ng current course (match by name OR code para kasama yung luma at bago)
+    const courseGrades = grades.filter(
+        (g) => g.course === courseName || g.course === courseCode
+    );
+
+    // assessments ng course lang
+    const courseAssessments = assessments.filter(
+        (a) => a.course === courseName || a.course === courseCode
+    );
+
+    // pangkuwa ng lahat ng grades
     function loadGrades(){
         axios
-            .get("http://localhost:5000/grades?course=" + courseCode)
+            .get("http://localhost:5000/grades")
             .then((response) => {
                 setGrades(response.data);
             });
@@ -50,21 +63,55 @@ function GradebookPage() {
             });
     }
 
-    // pangkuwa ng students ng course
+    // pangkuwa ng courses + students ng teacher
     useEffect(() => {
-        axios
-            .get("http://localhost:5000/my-courses")
-            .then((response) => {
-                const course = response.data.find((c) => c.code === courseCode);
-                if (course) {
-                    setCourseName(course.name);
-                    setStudents(course.students.map((s) => s.student));
+        const studentId = localStorage.getItem("studentId");
+
+        Promise.all([
+            axios.get("http://localhost:5000/my-courses"),
+            axios.get("http://localhost:5000/courses"),
+            axios.get("http://localhost:5000/students")
+        ]).then(([myRes, allRes, studentsRes]) => {
+            const all = Array.isArray(allRes.data) ? allRes.data : [];
+            const mine = Array.isArray(myRes.data) ? myRes.data : [];
+            const everyone = Array.isArray(studentsRes.data) ? studentsRes.data : [];
+
+            const me = everyone.find((s) => s._id === studentId);
+            const myName = me ? ((me.firstName || '') + " " + (me.lastName || '')).trim() : '';
+
+            const assigned = all.filter(
+                (c) => (c.instructor || '').trim().toLowerCase() === myName.toLowerCase()
+            );
+
+            const result = assigned.map((course) => {
+                const detailed = mine.find(
+                    (m) => (m.name || '').trim().toLowerCase() === (course.name || '').trim().toLowerCase()
+                );
+
+                if (detailed) {
+                    return {
+                        ...course,
+                        _id: detailed._id,
+                        code: detailed.code || '',
+                        students: detailed.students || []
+                    };
                 }
+
+                return {
+                    ...course,
+                    code: course.code || '',
+                    students: []
+                };
             });
+
+            setCourses(result);
+        });
 
         loadGrades();
         loadAssessments();
     }, []);
+
+
 
     function openAdd(){
         setEditingId(null);
@@ -104,7 +151,7 @@ function GradebookPage() {
         const chosen = assessments.find((a) => a._id === assessment);
 
         const data = {
-            course: courseCode,
+            course: courseName,
             student: student,
             assessment: assessment,
             submission: chosen.name,
@@ -152,16 +199,16 @@ function GradebookPage() {
 
     // class average (number)
     function getAverage(){
-        if (grades.length === 0) {
+        if (courseGrades.length === 0) {
             return 0;
         }
 
         let sum = 0;
-        for (let i = 0; i < grades.length; i++) {
-            sum = sum + (grades[i].score / grades[i].total) * 100;
+        for (let i = 0; i < courseGrades.length; i++) {
+            sum = sum + (courseGrades[i].score / courseGrades[i].total) * 100;
         }
 
-        return (sum / grades.length).toFixed(1);
+        return (sum / courseGrades.length).toFixed(1);
     }
 
     return (
@@ -175,48 +222,60 @@ function GradebookPage() {
 
                 <h1>Gradebook</h1>
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+                {courses.length === 0 && <p>You have no courses assigned yet.</p>}
 
-                    <div style={{ ...card, backgroundColor: '#5B27C9', color: '#fff' }}>
-                        <h3>Data Structures (CS201)</h3>
-                        <p>Class average: {getAverage()}%</p>
-                    </div>
+                {current && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
 
-                    <div style={card}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <h3>Course Grades</h3>
-                            <Button onClick={openAdd} variant="contained" size="small" sx={btn}>Add Grade</Button>
+                        <div style={{ ...card, backgroundColor: '#5B27C9', color: '#fff' }}>
+                            <h3>{courseName}{courseCode ? " (" + courseCode + ")" : ""}</h3>
+                            <p>Class average: {getAverage()}%</p>
                         </div>
 
-                        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                            <thead>
-                                <tr>
-                                    <th style={cell}>Student</th>
-                                    <th style={cell}>Submission</th>
-                                    <th style={cell}>Score</th>
-                                    <th style={cell}>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {grades.map((g) => (
-                                    <tr key={g._id}>
-                                        <td style={cell}>{g.student.firstName} {g.student.lastName}</td>
-                                        <td style={cell}>{g.submission}</td>
-                                        <td style={cell}>{g.score} / {g.total}</td>
-                                        <td style={cell}>
-                                            <Button onClick={() => openFeedback(g)} variant="contained" size="small" sx={{ ...btn, marginRight: 1 }}>Feedback</Button>
-                                            <Button onClick={() => openEdit(g)} variant="contained" size="small" sx={{ ...btn, marginRight: 1 }}>Edit</Button>
-                                            <Button onClick={() => deleteGrade(g._id)} variant="contained" size="small" sx={delBtn}>Delete</Button>
-                                        </td>
+                        <div style={card}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <h3>Course Grades</h3>
+                                <Button onClick={openAdd} variant="contained" size="small" sx={btn}>Add Grade</Button>
+                            </div>
+
+                            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                                <thead>
+                                    <tr>
+                                        <th style={cell}>Student</th>
+                                        <th style={cell}>Submission</th>
+                                        <th style={cell}>Score</th>
+                                        <th style={cell}>Actions</th>
                                     </tr>
-                                ))}
-                            </tbody>
-                        </table>
+                                </thead>
+                                <tbody>
+                                    {courseGrades.map((g) => (
+                                        <tr key={g._id}>
+                                            <td style={cell}>{g.student.firstName} {g.student.lastName}</td>
+                                            <td style={cell}>{g.submission}</td>
+                                            <td style={cell}>{g.score} / {g.total}</td>
+                                            <td style={cell}>
+                                                <Button onClick={() => openFeedback(g)} variant="contained" size="small" sx={{ ...btn, marginRight: 1 }}>Feedback</Button>
+                                                <Button onClick={() => openEdit(g)} variant="contained" size="small" sx={{ ...btn, marginRight: 1 }}>Edit</Button>
+                                                <Button onClick={() => deleteGrade(g._id)} variant="contained" size="small" sx={delBtn}>Delete</Button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
 
-                        {grades.length === 0 && <p>No grades yet.</p>}
+                            {courseGrades.length === 0 && <p>No grades yet.</p>}
+                        </div>
+
+                        {totalPages > 1 && (
+                            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 12, marginTop: 10 }}>
+                                <Button onClick={() => setPage(page - 1)} disabled={page === 0} variant="outlined" sx={outlined}>← Previous</Button>
+                                <span style={{ fontWeight: 600 }}>Page {page + 1} of {totalPages}</span>
+                                <Button onClick={() => setPage(page + 1)} disabled={page >= totalPages - 1} variant="outlined" sx={outlined}>Next →</Button>
+                            </div>
+                        )}
+
                     </div>
-
-                </div>
+                )}
 
             </div>
 

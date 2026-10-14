@@ -23,6 +23,7 @@ function MyCoursesPage() {
     const [text, setText] = useState('');
     const [message, setMessage] = useState('');
     const [isError, setIsError] = useState(false);
+    const [search, setSearch] = useState('');
     const [allStudents, setAllStudents] = useState([]);
     const [enrollStudent, setEnrollStudent] = useState('');
     const [enrollSection, setEnrollSection] = useState('');
@@ -226,6 +227,10 @@ function MyCoursesPage() {
 
                         <div style={card}>
                             <h3>Students</h3>
+                            <TextField label="Search students" 
+                            size="small" value={search} 
+                            onChange={(e) => setSearch(e.target.value)} 
+                            variant="outlined" fullWidth style={{ marginBottom: 16 }} />
                             {current.students.length === 0 && <p>No students enrolled yet.</p>}
                             {current.students.length > 0 && (
                                 <div style={{ overflowX: 'auto' }}>
@@ -241,7 +246,7 @@ function MyCoursesPage() {
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            {current.students.map((s) => (
+                                            {current.students.filter((s) => (s.student.firstName + ' ' + s.student.lastName + ' ' + s.student.email + ' ' + s.section).toLowerCase().includes(search.toLowerCase())).map((s) => (
                                                 <tr key={s._id}>
                                                     <td style={cell}>{s.student.firstName} {s.student.lastName}</td>
                                                     <td style={cell}>{s.student.email}</td>
