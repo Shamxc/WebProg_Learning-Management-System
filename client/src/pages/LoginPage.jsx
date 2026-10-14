@@ -18,38 +18,55 @@ function LoginPage() {
     function login(){
 
         if (email.trim() === "" || password === "") {
-            setIsError(true);
-            setMessage("Please fill in all fields");
-            return;
-        }
+        setIsError(true);
+        setMessage("Please fill in all fields");
+        return;
+    }
 
-        if (!email.includes("@") || !email.includes(".") || email.length > 30) {
-            setIsError(true);
-            setMessage("Please enter a valid email");
-            return;
-        }
+    if (!email.includes("@") || !email.includes(".") || email.length > 30) {
+        setIsError(true);
+        setMessage("Please enter a valid email");
+        return;
+    }
 
-        axios
-            .post("http://localhost:5000/login", {
-                email: email,
-                password: password,
-                role: role
-            })
+    // role validation
+    if (role === "STUDENT") {
+        // student flow — ok, continue
+    } else if (role === "TEACHER") {
+        // teacher flow — ok, continue
+    } else if (role === "ADMIN") {
+        // admin flow — ok, continue
+    } else {
+        setIsError(true);
+        setMessage("Please select a role");
+        return;
+    }
 
-            .then((response) => {
-                setIsError(false);
-                setEmail("");
-                setPassword("");
-                // store role too so the dashboard can use it
-                localStorage.setItem("studentId", response.data._id);
-                localStorage.setItem("role", role);
-                navigate("/dashboard");
-            })
+    axios
+        .post("http://localhost:5000/login", {
+            email: email,
+            password: password,
+            role: role
+        })
 
-            .catch((error) => {
+        .then((response) => {
+            if (response.data.role !== role) {
                 setIsError(true);
-                setMessage(error.response ? error.response.data : "Something went wrong");
-            });
+                setMessage(`This account is not registered as a ${role.toLowerCase()}.`);
+                return; 
+            }
+            setIsError(false);
+            setEmail("");
+            setPassword("");
+            localStorage.setItem("studentId", response.data._id);
+            localStorage.setItem("role", response.data.role);
+            navigate("/dashboard");
+        })
+
+        .catch((error) => {
+            setIsError(true);
+            setMessage(error.response ? error.response.data : "Something went wrong");
+        });
     }
 
     return (
