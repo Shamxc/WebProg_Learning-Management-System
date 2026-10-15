@@ -101,9 +101,6 @@ function LoginPage() {
 
                     <TextField label="Password"  value={password} onChange={(e) => setPassword(e.target.value)} type="password" variant="outlined" fullWidth sx={{ backgroundColor: '#fff' }} />
 
-                    <div style={{ textAlign: 'right', margin: '10px 0 20px' }}>
-                        <a style={{ color: '#5B27C9', cursor: 'pointer', textDecoration: 'underline' }}>Forgot password?</a>
-                    </div>
 
                     {message && <Alert severity={isError ? "error" : "success"} sx={{ marginBottom: 2 }}>{message}</Alert>}
 
