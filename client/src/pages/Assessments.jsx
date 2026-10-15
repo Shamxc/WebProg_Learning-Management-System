@@ -55,6 +55,8 @@ function AssessmentsPage() {
             });
     }
 
+    
+
     useEffect(() => {
         loadAssessments();
         axios
@@ -63,6 +65,18 @@ function AssessmentsPage() {
                 setCourseList(Array.isArray(response.data) ? response.data : []);
             })
             .catch(() => setCourseList([]));
+    }, []);
+
+    function loadSections(){
+        axios
+            .get("http://localhost:5000/sections")
+            .then((response) => {
+                setSections(Array.isArray(response.data) ? response.data : []);
+            })
+            .catch(() => setSections([]));
+    }
+    useEffect(() => {
+        loadSections();
     }, []);
 
     function formatDate(value){
@@ -78,6 +92,7 @@ function AssessmentsPage() {
     }
 
     function openAdd(){
+        loadSections();
         setEditName('');
         setEditCourse('');
         setEditSection('');
@@ -89,6 +104,7 @@ function AssessmentsPage() {
     }
 
     function openEdit(assessment){
+        loadSections();
         setSelected(assessment);
         setEditName(assessment.name);
         setEditCourse(assessment.course);
